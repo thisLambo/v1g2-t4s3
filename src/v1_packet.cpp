@@ -574,6 +574,7 @@ void PacketDecoder::decode_v2(int lowSpeedThreshold, uint8_t currentSpeed) {
             if (alertPresent) {
                 alertPresent = false;
                 photoAlertPresent = false;
+                set_var_prioBars(0);
             }
             return;
         }

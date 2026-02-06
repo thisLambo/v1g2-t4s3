@@ -115,8 +115,13 @@ class ClientCallbacks : public NimBLEClientCallbacks {
   }
 
   void onConnectFail(NimBLEClient* pClient, int reason) override {
-    Serial.printf("%s Connect failed, reason = %d\n", 
+    Serial.printf("%s Connect failed, reason = %d - Restarting scan\n", 
       pClient->getPeerAddress().toString().c_str(), reason);
+    
+    // Restart scanning after connection failure
+    if (!bt_connected) {
+      NimBLEDevice::getScan()->start(scanTimeMs);
+    }
   }
 } clientCallbacks;
   
@@ -168,9 +173,11 @@ class ScanCallbacks : public NimBLEScanCallbacks {
 
       if (doBLEConnect && pClient) {
         if (!pClient->connect(true, true, false)) {
-          Serial.println("Failed to connect, deleting client...");
+          Serial.println("Failed to connect, deleting client and restarting scan...");
           NimBLEDevice::deleteClient(pClient);
           pClient = nullptr;
+          // Restart scanning to find the device when it becomes available
+          NimBLEDevice::getScan()->start(scanTimeMs);
           return;
         }
         pClient->setClientCallbacks(&clientCallbacks, false);
@@ -179,8 +186,9 @@ class ScanCallbacks : public NimBLEScanCallbacks {
   }
 
   void onScanEnd(const NimBLEScanResults& results, int reason) override {
-      bt_connected = false;
-      NimBLEDevice::getScan()->start(scanTimeMs);
+      if (!bt_connected) {
+          NimBLEDevice::getScan()->start(scanTimeMs);
+      }
   }
 } scanCallbacks;
 
