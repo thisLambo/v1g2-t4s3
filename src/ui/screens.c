@@ -748,6 +748,9 @@ void tick_screen_main() {
     bool muteToGray = get_var_muteToGray();
     bool displayGray = (muted && muteToGray); // true if muted and muteToGray is enabled
 
+    static uint32_t modeDisplayStartTime = 0;
+    static bool modeDisplayActive = false;
+
     if (displayGray != lastColorState) {
         update_alert_display(displayGray);
         update_signal_bars(numBars); 
@@ -939,10 +942,10 @@ void tick_screen_main() {
             objects.alert_table, objects.mute_logo, objects.photo_type,
             objects.photo_image, objects.band_x, objects.band_k, 
             objects.band_ka, objects.rear_arrow, objects.side_arrow, 
-            objects.front_arrow, objects.prio_bar_container,
+            objects.front_arrow, objects.prio_bar_container, objects.mode_type
         };
 
-        for(int i = 0; i < 11 ; i++) {
+        for(int i = 0; i < 12 ; i++) {
             // Option A: Fade all at once (there's a noticeable lag?)
             //fade_out_and_hide(objs_to_hide[i], 0);
             
@@ -1012,6 +1015,10 @@ void tick_screen_main() {
         }
         // No alert present = show the mode + custom freq indicator, hide the bogey counter
         else if (!alertPresent && useDefault) {
+            modeDisplayActive = false; // Ensure timer is reset when switching to default mode
+            if (lv_obj_has_flag(objects.mode_type, LV_OBJ_FLAG_HIDDEN) == false) {
+                 lv_obj_add_flag(objects.mode_type, LV_OBJ_FLAG_HIDDEN);
+            }
             if (new_val && new_val != cur_raw ||
                 lv_obj_has_flag(objects.default_mode, LV_OBJ_FLAG_HIDDEN)) {
                     const char *txt_val = get_var_logicmode(useDefault);
@@ -1049,6 +1056,23 @@ void tick_screen_main() {
                 }
 
                 lastAlertCount = -1;
+        }
+        else if (!useDefault) {
+            const char *txt_val = get_var_logicmode(useDefault);
+            const char *cur_val = lv_label_get_text(target);
+            if (txt_val && cur_val && strcmp(txt_val, cur_val) != 0) {
+                LV_LOG_INFO("non-default mode changed to %s, showing for 2s", txt_val);
+                lv_label_set_text(target, txt_val);
+                lv_obj_clear_flag(target, LV_OBJ_FLAG_HIDDEN);
+                modeDisplayStartTime = getMillis();
+                modeDisplayActive = true;
+            }
+
+            if (modeDisplayActive && (getMillis() - modeDisplayStartTime > 2000)) {
+                LV_LOG_INFO("hiding non-default mode after 2s");
+                lv_obj_add_flag(target, LV_OBJ_FLAG_HIDDEN);
+                modeDisplayActive = false;
+            }
         }
     }
 }

@@ -103,6 +103,9 @@ class ClientCallbacks : public NimBLEClientCallbacks {
                   pClient->getPeerAddress().toString().c_str(), reason);
 
     bt_connected = false;
+    clientWriteCharacteristic = nullptr;
+    infDisplayDataCharacteristic = nullptr;
+    dataRemoteService = nullptr;
     if (settings.proxyBLE) {
       NimBLEDevice::stopAdvertising();
     }
@@ -196,7 +199,7 @@ class CommandWriteCallback : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
     std::string cmd = pCharacteristic->getValue();
 
-    if (clientWriteCharacteristic) {
+    if (bt_connected && clientWriteCharacteristic) {
       if (clientWriteCharacteristic->writeValue(cmd)) {
         /*
         Serial.print("Command forwarded to V1G2: ");
@@ -438,26 +441,36 @@ void queryDeviceInfo(NimBLEClient* pClient) {
   }
 
 void requestSerialNumber() {
+    if (bt_connected && clientWriteCharacteristic) {
       clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqSerialNumber(), 7, false);
       delay(10);
+    }
   }
   
 void requestVersion() {
+  if (bt_connected && clientWriteCharacteristic) {
     clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqVersion(), 7, false);
     delay(10);
+  }
 }
 
 void requestVolume() {
-  if (xSemaphoreTake(bleMutex, pdMS_TO_TICKS(100))) {
-    clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqCurrentVolume(), 7, false);
-    vTaskDelay(10);
-    xSemaphoreGive(bleMutex);
+  if (bt_connected && clientWriteCharacteristic) {
+    if (xSemaphoreTake(bleMutex, pdMS_TO_TICKS(100))) {
+      if (bt_connected && clientWriteCharacteristic) {
+        clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqCurrentVolume(), 7, false);
+        vTaskDelay(10);
+      }
+      xSemaphoreGive(bleMutex);
+    }
   }
 }
 
 void requestUserBytes() {
+  if (bt_connected && clientWriteCharacteristic) {
     clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqUserBytes(), 7, false);
     vTaskDelay(10);
+  }
 }
 
 void requestSweepSections() {
@@ -484,8 +497,10 @@ void requestAllSweepDefinitions() {
 void reqBatteryVoltage() {
   if (bt_connected && clientWriteCharacteristic && !alertPresent) {
     if (xSemaphoreTake(bleMutex, pdMS_TO_TICKS(100))) {
-      clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqBatteryVoltage(), 7, false);
-      vTaskDelay(10);
+      if (bt_connected && clientWriteCharacteristic) {
+        clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqBatteryVoltage(), 7, false);
+        vTaskDelay(10);
+      }
       xSemaphoreGive(bleMutex);
     }
   }
@@ -503,8 +518,10 @@ void batteryTask(void *p) {
 void reqVolume() {
   if (bt_connected && clientWriteCharacteristic && !alertPresent) {
     if (xSemaphoreTake(bleMutex, pdMS_TO_TICKS(100))) {
-      clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqCurrentVolume(), 7, false);
-      vTaskDelay(10);
+      if (bt_connected && clientWriteCharacteristic) {
+        clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqCurrentVolume(), 7, false);
+        vTaskDelay(10);
+      }
       xSemaphoreGive(bleMutex);
     }
   }
@@ -520,13 +537,13 @@ void volumeTask(void *p) {
 }
 
 void requestMute() {
-  if (!settings.displayTest && clientWriteCharacteristic && bt_connected) {
+  if (!settings.displayTest && bt_connected && clientWriteCharacteristic) {
     clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqMuteOn(), 7, false);
   }
 }
 
 void reqMuteOff() {
-  if (!settings.displayTest && clientWriteCharacteristic && bt_connected) {
+  if (!settings.displayTest && bt_connected && clientWriteCharacteristic) {
     clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqMuteOff(), 7, false);
   }
 }
