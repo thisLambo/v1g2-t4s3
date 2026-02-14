@@ -103,6 +103,7 @@ class ClientCallbacks : public NimBLEClientCallbacks {
                   pClient->getPeerAddress().toString().c_str(), reason);
 
     bt_connected = false;
+    reset_v1_state();
     clientWriteCharacteristic = nullptr;
     infDisplayDataCharacteristic = nullptr;
     dataRemoteService = nullptr;

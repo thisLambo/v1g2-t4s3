@@ -113,6 +113,27 @@ BandArrowData processBandArrow_v2(uint8_t& bandArrow) {
     return data;
 }
 
+void reset_v1_state() {
+    alertPresent = false;
+    photoAlertPresent = false;
+    activeBands = 0;
+    ka_state.active = false;
+    k_state.active = false;
+    x_state.active = false;
+    laser_state.active = false;
+    front_state.active = false;
+    side_state.active = false;
+    rear_state.active = false;
+    
+    disable_blinking(BLINK_KA);
+    disable_blinking(BLINK_K);
+    disable_blinking(BLINK_X);
+    disable_blinking(BLINK_LASER);
+    disable_blinking(BLINK_FRONT);
+    disable_blinking(BLINK_SIDE);
+    disable_blinking(BLINK_REAR);
+}
+
 void updateBandActivity(bool ka, bool k, bool x, bool laser) {
     uint32_t now = millis();
 

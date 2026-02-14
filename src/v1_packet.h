@@ -125,6 +125,7 @@ extern BandState front_state;
 extern BandState side_state;
 extern BandState rear_state;
 
+extern void reset_v1_state();
 void updateBandActivity(bool ka, bool k, bool x, bool laser);
 void updateArrowActivity(bool front, bool side, bool rear);
 void checkBandTimeouts();
