@@ -102,11 +102,22 @@ class ClientCallbacks : public NimBLEClientCallbacks {
     Serial.printf("%s Disconnected, reason = %d - Restarting scan in 2s\n", 
                   pClient->getPeerAddress().toString().c_str(), reason);
 
-    bt_connected = false;
-    reset_v1_state();
-    clientWriteCharacteristic = nullptr;
-    infDisplayDataCharacteristic = nullptr;
-    dataRemoteService = nullptr;
+    if (xSemaphoreTake(bleMutex, pdMS_TO_TICKS(500))) {
+        bt_connected = false;
+        reset_v1_state();
+        clientWriteCharacteristic = nullptr;
+        infDisplayDataCharacteristic = nullptr;
+        dataRemoteService = nullptr;
+        xSemaphoreGive(bleMutex);
+    } else {
+        Serial.println("Failed to take bleMutex in onDisconnect, forcing reset");
+        bt_connected = false;
+        reset_v1_state();
+        clientWriteCharacteristic = nullptr;
+        infDisplayDataCharacteristic = nullptr;
+        dataRemoteService = nullptr;
+    }
+
     if (settings.proxyBLE) {
       NimBLEDevice::stopAdvertising();
     }
