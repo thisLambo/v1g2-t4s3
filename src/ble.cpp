@@ -306,11 +306,13 @@ static void notifyDisplayCallbackv2(NimBLERemoteCharacteristic* pCharacteristic,
   } 
   else if (packetId == 0x43) {
     hasAlerts = (pData[5] != 0x00);  // 0x43: check byte 5
-    alertPresent = false;
-    photoAlertPresent = false;
-    muted = false;
-    // should we call the clear_inactive_bands timer instead of activeBands = 0x00
-    start_clear_inactive_bands_timer();
+    if (!hasAlerts) {
+      alertPresent = false;
+      photoAlertPresent = false;
+      muted = false;
+      // should we call the clear_inactive_bands timer instead of activeBands = 0x00
+      start_clear_inactive_bands_timer();
+    }
   }
   else {
     hasAlerts = true;
